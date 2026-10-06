@@ -30,10 +30,33 @@ input[type=search]{width:100%;padding:10px;border:1px solid var(--bd);border-rad
 .item small{color:var(--mut);margin-left:auto;white-space:nowrap}
 .lab{font-size:12px;color:var(--mut);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
 .empty{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:10px;font-size:14px;border-radius:10px;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:6px 11px;border-radius:999px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.pill i{width:9px;height:9px;border-radius:50%;display:none}
+.pill.on i{display:inline-block}
+.pill.on{border-color:var(--fg)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--bd)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:500}
+.neg{color:#c23b3b}.pos{color:#2e8b57}
+[hidden]{display:none!important}
+.note{font-size:13px;color:var(--mut);margin:0 0 8px}
+details summary{cursor:pointer;color:var(--ac);font-size:14px;padding:4px 0}
+.src{list-style:none;margin:8px 0 0;padding:0}
+.src li{padding:9px 0;border-top:1px solid var(--bd);font-size:14px}
+.src a{color:var(--ac);word-break:break-word}
+.yrs{display:block;color:var(--mut);font-size:12px;margin-top:2px}
 </style></head>
 <body><main>
 <h1>Portland Public Schools enrollment</h1>
 <div class="sub">2016-17 to 2025-26 · pick any number of schools to compare · <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">source data</a></div>
+<div class="tabs" id="tabs"><button class="on" data-v="school">By school</button><button data-v="grade">By grade</button></div>
+<div id="vSchool">
 
 <div class="card">
   <div class="row" style="justify-content:space-between;margin-bottom:10px">
@@ -60,6 +83,37 @@ input[type=search]{width:100%;padding:10px;border:1px solid var(--bd);border-rad
     <button data-l="all" class="on">All</button><button data-l="el">Elementary</button><button data-l="mid">Middle</button><button data-l="hs">High</button><button data-l="k8">K-8</button>
   </div>
   <div class="list" id="list"></div>
+</div>
+</div>
+<div id="vGrade" hidden>
+<div class="card">
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <div class="seg" id="gmode"><button data-m="abs" class="on">Enrollment</button><button data-m="idx">% of 2016-17</button><button data-m="chg">% change YoY</button></div>
+  </div>
+  <div class="chartbox"><canvas id="gc"></canvas></div>
+</div>
+<div class="card">
+  <p class="lab">Choose grades</p>
+  <div class="seg" style="margin-bottom:10px" id="gquick">
+    <button data-s="pk">Pre-K</button><button data-s="el">K-5</button><button data-s="mid">6-8</button><button data-s="hs">9-12</button><button data-s="all">All grades</button><button data-s="tot">Totals</button><button data-s="none">Clear</button>
+  </div>
+  <div class="pills" id="gpills"></div>
+</div>
+<div class="card">
+  <p class="lab">Change by grade</p>
+  <div class="tw"><table id="gtab"></table></div>
+</div>
+<div class="card">
+  <p class="lab">Sources</p>
+  <p class="note">PPS October enrollment snapshot; counts are unduplicated. See the source reports for exact methodology and footnotes. 2020-21 reflects pandemic-era enrollment.</p>
+  <details><summary>View 5 source reports</summary><ul class="src">
+<li><a href="https://resources.finalsite.net/images/v1751571293/ppsnet/qnlqsgrsfavxdrbrql6v/enrollmentsummary-19.pdf" target="_blank" rel="noopener">PPS October 2018 Enrollment Summary (contains 2016, 2017, 2018)</a><span class="yrs">Used for 2016-17 to 2018-19</span></li>
+<li><a href="https://resources.finalsite.net/images/v1751571291/ppsnet/lekxl0awwlparwnl0ezo/enrollmentsummary-20.pdf" target="_blank" rel="noopener">PPS October 2019 Enrollment Summary (contains 2017, 2018, 2019)</a><span class="yrs">Used for 2019-20</span></li>
+<li><a href="https://www.pps.net/cms/lib/OR01913224/Centricity/Domain/207/Enrollment%20Summary%202022-23.pdf" target="_blank" rel="noopener">PPS October 2022 Enrollment Summary (contains 2020, 2021, 2022)</a><span class="yrs">Used for 2020-21 to 2022-23</span></li>
+<li><a href="https://www.pps.net/cms/lib/OR01913224/Centricity/Domain/207/Enrollment%20Summary%20October%202024.pdf" target="_blank" rel="noopener">PPS October 2024 Enrollment Summary (contains 2022, 2023, 2024)</a><span class="yrs">Used for 2023-24 to 2024-25</span></li>
+<li><a href="https://resources.finalsite.net/images/v1767112711/ppsnet/g7i6hep7yr88f3z62ts6/EnrollmentbyGradeandProgram25-26_1.pdf" target="_blank" rel="noopener">PPS October 2025 Enrollment by Grade and Program</a><span class="yrs">Used for 2025-26</span></li>
+</ul></details>
+</div>
 </div>
 <div class="sub" style="margin-top:4px">Source: <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">Portland Public Schools enrollment document (pps.net)</a></div>
 </main>
@@ -89,7 +143,7 @@ function draw(){
     ds.push({label:"Combined total",data:series(tv),borderColor:cssv("--fg"),backgroundColor:cssv("--fg"),borderDash:[6,4],borderWidth:2,pointRadius:2,spanGaps:false});
   }
   const mut=cssv("--mut"),bd=cssv("--bd");
-  const cfg={type:"line",data:{labels:YEARS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+  const cfg={type:"line",data:{labels:YEARS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},onClick:tipToggle,
     plugins:{legend:{display:false},tooltip:{itemSort:(a,b)=>(b.raw??-1e9)-(a.raw??-1e9),callbacks:{label:c=>{const v=c.raw;return` ${c.dataset.label}: ${v==null?"n/a":mode==="abs"?v.toLocaleString():v+"%"}`}}}},
     scales:{x:{ticks:{color:mut,maxRotation:45},grid:{color:bd}},y:{ticks:{color:mut,callback:v=>mode==="abs"?v:v+"%"},grid:{color:bd},beginAtZero:mode==="abs",title:{display:true,color:mut,text:mode==="abs"?"Students":mode==="idx"?"Share of first-year enrollment":"Year-over-year change"}}}}};
   if(chart)chart.destroy();
@@ -117,7 +171,70 @@ $("lv").onclick=e=>{const l=e.target.dataset.l;if(!l)return;lv=l;[...$("lv").chi
 $("tot").onclick=()=>{showTot=!showTot;$("tot").classList.toggle("on",showTot);draw()};
 $("clear").onclick=()=>{sel.clear();refresh()};
 $("addvis").onclick=()=>{visible().slice(0,40).forEach(s=>{if(!sel.has(s.n))sel.set(s.n,nextColor())});refresh()};
-["Maplewood","Rieke","Hayhurst","Markham"].forEach(n=>{if(D.some(s=>s.n===n))sel.set(n,nextColor())});
+["Maplewood","Rieke","Hayhurst","Markham","Capitol Hill","Stephenson"].forEach(n=>{if(D.some(s=>s.n===n))sel.set(n,nextColor())});
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
 refresh();
-</script></body></html>
+</script><script>
+function hideTip(ch){if(!ch||!ch.tooltip)return;ch._li=-1;ch.tooltip.setActiveElements([],{x:0,y:0});ch.setActiveElements([]);ch.update("none")}
+function tipToggle(evt,els,ch){const i=els.length?els[0].index:-1;
+  if(i!==-1&&i===ch._li){setTimeout(()=>hideTip(ch),0)}else ch._li=i}
+document.addEventListener("pointerdown",e=>{if(e.target.closest&&e.target.closest(".chartbox"))return;hideTip(typeof chart!=="undefined"?chart:null);hideTip(typeof gchart!=="undefined"?gchart:null)});
+</script>
+<script>
+const GD=[{"g":"Pre-Kindergarten","v":[880,873,842,825,377,492,658,766,711,857]},{"g":"Kindergarten","v":[4073,3948,3899,3874,3245,3195,3152,2995,2837,2919]},{"g":"Grade 1","v":[4141,4106,3916,3930,3696,3282,3376,3213,3070,2950]},{"g":"Grade 2","v":[4211,4070,4040,3861,3738,3476,3319,3360,3207,3078]},{"g":"Grade 3","v":[4160,4133,4011,3972,3646,3486,3502,3320,3365,3158]},{"g":"Grade 4","v":[4128,4137,4051,3961,3747,3388,3485,3464,3296,3351]},{"g":"Grade 5","v":[3916,4087,4036,3963,3764,3497,3358,3461,3410,3239]},{"g":"Grade 6","v":[3568,3704,3844,3797,3614,3375,3405,3205,3270,3305]},{"g":"Grade 7","v":[3605,3523,3619,3811,3665,3420,3355,3334,3200,3233]},{"g":"Grade 8","v":[3523,3553,3500,3524,3738,3550,3457,3285,3336,3215]},{"g":"Grade 9","v":[3240,3344,3500,3463,3442,3652,3601,3439,3394,3480]},{"g":"Grade 10","v":[3203,3228,3354,3472,3473,3474,3621,3593,3434,3401]},{"g":"Grade 11","v":[3102,3220,3234,3299,3439,3379,3381,3558,3546,3364]},{"g":"Grade 12","v":[3439,3631,3704,3726,3730,3831,3786,3778,4010,3929]},{"g":"Pre-K - 12 Totals","v":[49189,49557,49550,49478,47314,45497,45456,44771,44086,43479]},{"g":"K - 12 Totals","v":[48309,48684,48708,48653,46937,45005,44798,44005,43375,42622]}];
+const GSHORT=g=>g==="Pre-Kindergarten"?"Pre-K":g==="Kindergarten"?"K":g==="Pre-K - 12 Totals"?"Pre-K–12 total":g==="K - 12 Totals"?"K–12 total":g.replace("Grade ","");
+const GROUPS={pk:["Pre-Kindergarten"],el:["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5"],mid:["Grade 6","Grade 7","Grade 8"],hs:["Grade 9","Grade 10","Grade 11","Grade 12"],all:GD.filter(x=>!/Totals/.test(x.g)).map(x=>x.g),tot:["Pre-K - 12 Totals","K - 12 Totals"],none:[]};
+const gsel=new Map();let gmode="abs",gchart;
+const GP=["#2f6fb0","#e07a1f","#2e9d5b","#c23b5a","#7a52b3","#16a3b8","#b8a000","#8c5a3c","#d94fa0","#5f6b7a"];
+const gcol=()=>{const u=new Set(gsel.values());for(const c of GP)if(!u.has(c))return c;return`hsl(${(gsel.size*47)%360},60%,50%)`};
+function gseries(v){
+  if(gmode==="abs")return v;
+  if(gmode==="idx")return v.map(x=>+(x/v[0]*100).toFixed(1));
+  return v.map((x,i)=>i?+((x-v[i-1])/v[i-1]*100).toFixed(1):null);
+}
+function gdraw(){
+  const ds=[];gsel.forEach((col,n)=>{const s=GD.find(x=>x.g===n);ds.push({label:n,data:gseries(s.v),borderColor:col,backgroundColor:col,borderWidth:/Totals/.test(n)?2:2.5,borderDash:/Totals/.test(n)?[6,4]:[],pointRadius:3,tension:.2})});
+  const mut=cssv("--mut"),bd=cssv("--bd");
+  if(gchart)gchart.destroy();
+  if(!ds.length){const c=$("gc").getContext("2d");c.clearRect(0,0,9999,9999);c.fillStyle=mut;c.font="14px system-ui";c.fillText("Select grades below to chart them",16,40);gchart=null;return}
+  gchart=new Chart($("gc"),{type:"line",data:{labels:YEARS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},onClick:tipToggle,
+    plugins:{legend:{display:false},tooltip:{itemSort:(a,b)=>(b.raw??-1e9)-(a.raw??-1e9),callbacks:{label:c=>` ${c.dataset.label}: ${gmode==="abs"?c.raw.toLocaleString():c.raw+"%"}`}}},
+    scales:{x:{ticks:{color:mut,maxRotation:45},grid:{color:bd}},y:{ticks:{color:mut,callback:v=>gmode==="abs"?v.toLocaleString():v+"%"},grid:{color:bd},beginAtZero:gmode==="abs",title:{display:true,color:mut,text:gmode==="abs"?"Students":gmode==="idx"?"Share of 2016-17 enrollment":"Year-over-year change"}}}}});
+}
+const pc=(a,b)=>{const d=(a-b)/b*100;return`<span class="${d<0?"neg":"pos"}">${d>0?"+":""}${d.toFixed(1)}%</span>`};
+function gtable(){
+  const t=$("gtab");if(!gsel.size){t.innerHTML='<tr><td class="empty">No grades selected</td></tr>';return}
+  let r="<tr><th>Grade</th><th>2016-17</th><th>2025-26</th><th>1-yr</th><th>5-yr</th><th>10-yr</th></tr>";
+  gsel.forEach((col,n)=>{const v=GD.find(x=>x.g===n).v,L=v.length-1;
+    r+=`<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${col};margin-right:6px"></i>${n}</td><td>${v[0].toLocaleString()}</td><td>${v[L].toLocaleString()}</td><td>${pc(v[L],v[L-1])}</td><td>${pc(v[L],v[L-4])}</td><td>${pc(v[L],v[0])}</td></tr>`});
+  t.innerHTML=r;
+}
+function gpills(){
+  const el=$("gpills");el.innerHTML="";
+  GD.forEach(s=>{const b=document.createElement("button");const on=gsel.has(s.g);b.className="pill"+(on?" on":"");
+    b.innerHTML=`<i style="background:${gsel.get(s.g)||"transparent"}"></i>${GSHORT(s.g)}`;
+    b.onclick=()=>{on?gsel.delete(s.g):gsel.set(s.g,gcol());grefresh()};el.appendChild(b)});
+}
+function grefresh(){gpills();gdraw();gtable()}
+$("gmode").onclick=e=>{const m=e.target.dataset.m;if(!m)return;gmode=m;[...$("gmode").children].forEach(b=>b.classList.toggle("on",b.dataset.m===m));gdraw()};
+$("gquick").onclick=e=>{const s=e.target.dataset.s;if(!s)return;gsel.clear();GROUPS[s].forEach(g=>gsel.set(g,gcol()));grefresh()};
+let gInit=false;
+$("tabs").onclick=e=>{const v=e.target.dataset.v;if(!v)return;[...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("vSchool").hidden=v!=="school";$("vGrade").hidden=v!=="grade";
+  if(v==="grade"){if(!gInit){gInit=true;GROUPS.el.forEach(g=>gsel.set(g,gcol()))}grefresh();requestAnimationFrame(gdraw)}else{draw();requestAnimationFrame(draw)}};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(!$("vGrade").hidden)gdraw()});
+</script>
+<script>
+function hideTip(ch){if(!ch||!ch.tooltip)return;ch.setActiveElements([]);ch.tooltip.setActiveElements([],{x:0,y:0});ch.update("none")}
+function makeDismissable(id,get){
+  const cv=document.getElementById(id);
+  cv.addEventListener("click",e=>{const ch=get();if(!ch||!ch.tooltip||ch.tooltip.opacity<.5)return;
+    const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,t=ch.tooltip;
+    if(x>=t.x-6&&x<=t.x+t.width+6&&y>=t.y-6&&y<=t.y+t.height+6){hideTip(ch);e.stopPropagation()}},true);
+  document.addEventListener("pointerdown",e=>{if(!cv.contains(e.target))hideTip(get())});
+  window.addEventListener("scroll",()=>hideTip(get()),{passive:true});
+}
+window.addEventListener("load",()=>{draw();if(!$("vGrade").hidden)gdraw()});
+makeDismissable("c",()=>chart);makeDismissable("gc",()=>gchart);
+</script>
+</body></html>
