@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PPS Enrollment Explorer</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1d2433;--mut:#6b7280;--card:#fff;--bd:#e3e3dc;--ac:#2f5d8a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--fg:#e8eaed;--mut:#9aa3af;--card:#1d2128;--bd:#2d333c;--ac:#7fb0e0}}
+:root[data-theme="dark"]{--bg:#14171c;--fg:#e8eaed;--mut:#9aa3af;--card:#1d2128;--bd:#2d333c;--ac:#7fb0e0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+.chartbox{position:relative;height:340px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg button,.btn{border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:7px 11px;font-size:13px;cursor:pointer;border-radius:8px}
+.seg button.on,.btn.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+input[type=search]{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:30px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);border-radius:999px;padding:4px 6px 4px 10px;font-size:13px}
+.chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.chip b{cursor:pointer;color:var(--mut);padding:0 4px;font-weight:400;font-size:16px}
+.list{max-height:260px;overflow-y:auto;margin-top:8px;border:1px solid var(--bd);border-radius:8px}
+.item{display:flex;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--bd);cursor:pointer}
+.item:last-child{border:0}
+.item input{width:18px;height:18px}
+.item small{color:var(--mut);margin-left:auto;white-space:nowrap}
+.lab{font-size:12px;color:var(--mut);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.empty{color:var(--mut);font-size:13px}
+</style></head>
+<body><main>
+<h1>Portland Public Schools enrollment</h1>
+<div class="sub">2016-17 to 2025-26 · pick any number of schools to compare · <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">source data</a></div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <div class="seg" id="mode">
+      <button data-m="abs" class="on">Enrollment</button>
+      <button data-m="idx">% of 2016-17</button>
+      <button data-m="chg">% change YoY</button>
+    </div>
+    <button class="btn" id="tot">Show combined total</button>
+  </div>
+  <div class="chartbox"><canvas id="c"></canvas></div>
+</div>
+
+<div class="card">
+  <p class="lab">Selected</p>
+  <div class="chips" id="chips"></div>
+  <div class="row" style="margin-top:8px"><button class="btn" id="clear">Clear all</button><button class="btn" id="addvis">Add all shown</button></div>
+</div>
+
+<div class="card">
+  <p class="lab">Add schools</p>
+  <input type="search" id="q" placeholder="Search schools…">
+  <div class="seg" id="lv" style="margin-top:8px">
+    <button data-l="all" class="on">All</button><button data-l="el">Elementary</button><button data-l="mid">Middle</button><button data-l="hs">High</button><button data-l="k8">K-8</button>
+  </div>
+  <div class="list" id="list"></div>
+</div>
+<div class="sub" style="margin-top:4px">Source: <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">Portland Public Schools enrollment document (pps.net)</a></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const YEARS=["2016-17","2017-18","2018-19","2019-20","2020-21","2021-22","2022-23","2023-24","2024-25","2025-26"];
+const D=[{"n":"Abernethy","g":"KG-5","v":[519,516,520,507,451,374,353,330,284,269]},{"n":"Ainsworth","g":"KG-5","v":[605,638,625,644,594,553,563,585,584,560]},{"n":"Alameda","g":"KG-5","v":[747,734,730,704,623,525,538,521,496,513]},{"n":"Arleta","g":"KG-5","v":[457,454,490,526,485,269,256,274,252,230]},{"n":"Astor","g":"KG-8","v":[455,425,434,416,394,393,368,375,408,400]},{"n":"Atkinson","g":"KG-5","v":[432,420,419,391,390,342,337,366,373,366]},{"n":"Beach","g":"KG-5","v":[464,442,428,436,382,351,346,325,295,288]},{"n":"Beverly Cleary","g":"KG-8","v":[884,897,782,742,692,657,604,560,535,480]},{"n":"Boise-Eliot/Humboldt","g":"PK-5","v":[532,499,325,343,334,340,356,338,315,294]},{"n":"Bridger","g":"KG-5","v":[500,531,504,516,514,337,329,null,null,null]},{"n":"Bridger Creative Science","g":"KG-8","v":[null,null,null,null,null,null,null,515,474,446]},{"n":"Bridlemile","g":"KG-5","v":[511,535,518,508,437,435,458,446,419,423]},{"n":"Buckman","g":"KG-5","v":[459,474,450,427,446,400,395,371,308,283]},{"n":"Capitol Hill","g":"KG-5","v":[448,442,443,416,346,324,333,361,318,325]},{"n":"Chapman","g":"KG-5","v":[584,532,484,484,375,341,350,344,349,330]},{"n":"Chief Joseph","g":"KG-5","v":[326,363,358,351,305,269,261,265,275,242]},{"n":"C\u00e9sar Ch\u00e1vez","g":"KG-8","v":[551,540,550,549,544,485,467,481,454,443]},{"n":"Clark","g":"KG-5","v":[null,null,null,null,null,null,null,341,331,364]},{"n":"Creative Science","g":"KG-8","v":[492,479,466,468,450,419,423,null,null,null]},{"n":"Creston","g":"KG-5","v":[356,372,361,375,385,250,260,238,241,213]},{"n":"Duniway","g":"KG-5","v":[519,499,504,512,468,436,422,409,387,362]},{"n":"Faubion","g":"PK-8","v":[532,710,767,786,740,703,684,643,589,600]},{"n":"Forest Park","g":"KG-5","v":[455,443,418,402,348,333,328,321,303,264]},{"n":"Glencoe","g":"KG-5","v":[492,489,451,449,395,373,394,372,356,339]},{"n":"Grout","g":"KG-5","v":[384,392,382,370,350,340,316,302,294,327]},{"n":"Harrison Park (K-8 historical)","g":"KG-8","v":[676,638,658,637,601,529,575,null,null,null]},{"n":"Hayhurst","g":"KG-5","v":[340,374,390,396,380,351,350,335,314,290]},{"n":"Odyssey","g":"KG-8","v":[212,218,239,244,244,219,225,227,211,217]},{"n":"Irvington","g":"KG-5","v":[446,459,339,325,320,248,228,235,249,259]},{"n":"James John","g":"KG-5","v":[405,368,347,351,316,332,337,348,367,365]},{"n":"Kelly","g":"KG-5","v":[604,532,498,476,419,372,356,376,385,411]},{"n":"MLK Jr","g":"PK-5","v":[386,389,321,341,324,315,334,343,312,319]},{"n":"Laurelhurst","g":"KG-8","v":[684,698,692,698,688,649,674,659,656,610]},{"n":"Lee / Sunrise","g":"KG-5","v":[447,425,276,269,262,236,276,295,257,251]},{"n":"Lent","g":"PK-5","v":[523,530,507,475,476,277,284,308,256,256]},{"n":"Lewis","g":"KG-5","v":[412,389,390,410,368,337,320,298,264,259]},{"n":"Llewellyn","g":"KG-5","v":[517,489,484,509,460,395,415,393,373,345]},{"n":"Maplewood","g":"KG-5","v":[384,378,383,374,347,291,310,301,295,287]},{"n":"Markham","g":"KG-5","v":[418,456,445,430,416,424,426,402,341,339]},{"n":"Marysville","g":"PK-5","v":[381,403,392,383,402,248,313,394,320,307]},{"n":"Peninsula","g":"KG-5","v":[266,279,267,265,237,201,225,234,235,239]},{"n":"Richmond","g":"KG-5","v":[649,647,632,627,600,551,539,537,530,512]},{"n":"Rieke","g":"KG-5","v":[410,386,379,368,329,313,300,288,278,264]},{"n":"Rigler","g":"KG-5","v":[472,441,308,307,268,237,223,255,301,289]},{"n":"Rosa Parks","g":"KG-5","v":[298,272,276,280,266,214,197,198,172,160]},{"n":"Rose City Park","g":"KG-5","v":[null,null,532,538,529,464,468,464,446,417]},{"n":"Sabin","g":"KG-5","v":[524,551,452,418,360,340,312,302,293,269]},{"n":"Scott","g":"KG-5","v":[512,521,459,485,460,429,453,500,494,476]},{"n":"Sitton","g":"KG-5","v":[401,364,367,374,337,307,346,335,339,345]},{"n":"Skyline","g":"KG-8","v":[300,293,274,248,181,205,215,218,226,207]},{"n":"Stephenson","g":"KG-5","v":[340,352,347,371,322,320,307,310,285,281]},{"n":"Sunnyside Environmental","g":"KG-8","v":[602,604,581,549,522,469,465,447,461,485]},{"n":"Vernon","g":"KG-8","v":[471,522,545,607,569,517,555,578,563,541]},{"n":"Vestal","g":"KG-5","v":[381,341,272,249,228,207,232,264,257,283]},{"n":"Whitman","g":"PK-5","v":[287,283,254,220,185,152,153,180,198,194]},{"n":"Winterhaven","g":"KG-8","v":[353,354,321,299,291,292,313,316,322,316]},{"n":"Woodlawn","g":"PK-5","v":[342,346,354,327,315,283,288,299,306,323]},{"n":"Woodmere","g":"KG-5","v":[303,286,310,273,269,253,235,248,242,227]},{"n":"Woodstock","g":"KG-5","v":[527,552,548,543,526,479,491,451,394,367]},{"n":"Beaumont","g":"6-8","v":[569,591,571,573,518,467,448,434,435,416]},{"n":"da Vinci","g":"6-8","v":[461,457,456,450,443,415,434,407,427,429]},{"n":"George","g":"6-8","v":[360,417,421,438,432,385,387,367,404,358]},{"n":"Gray","g":"6-8","v":[546,536,542,566,509,478,483,472,438,432]},{"n":"Harriet Tubman","g":"6-8","v":[null,null,491,430,443,388,361,320,328,402]},{"n":"Harrison Park","g":"6-8","v":[null,null,null,null,null,null,null,321,372,419]},{"n":"Hosford","g":"6-8","v":[631,621,588,651,676,629,566,517,537,528]},{"n":"Jackson","g":"6-8","v":[597,659,746,793,803,752,793,711,715,689]},{"n":"Kellogg","g":"6-8","v":[null,null,null,null,null,684,661,677,594,531]},{"n":"Lane / Brentwood","g":"6-8","v":[443,454,433,432,416,363,336,391,418,447]},{"n":"Mt. Tabor","g":"6-8","v":[730,718,741,724,721,645,607,503,467,430]},{"n":"Ockley Green","g":"6-8","v":[626,531,505,487,487,485,483,428,410,460]},{"n":"Roseway Heights","g":"6-8","v":[null,null,588,614,617,589,583,551,565,572]},{"n":"Sellwood","g":"6-8","v":[583,589,612,588,549,553,563,567,576,564]},{"n":"West Sylvan","g":"6-8","v":[911,876,822,833,802,727,759,722,670,683]},{"n":"Benson","g":"9-12","v":[994,1026,1035,1055,1005,895,827,818,896,1025]},{"n":"Cleveland","g":"9-12","v":[1609,1586,1651,1560,1581,1623,1547,1474,1422,1451]},{"n":"Franklin","g":"9-12","v":[1612,1745,1856,1936,2010,2014,1968,1811,1809,1780]},{"n":"Grant","g":"9-12","v":[1476,1512,1638,1813,1965,2126,2159,2178,2149,2074]},{"n":"Ida B. Wells-Barnett","g":"9-12","v":[1413,1512,1535,1558,1540,1597,1558,1652,1650,1574]},{"n":"Jefferson","g":"9-12","v":[590,677,656,641,620,588,607,525,459,391]},{"n":"McDaniel","g":"8-12","v":[1070,1146,1157,1079,1173,1369,1443,1650,1686,1629]},{"n":"Lincoln","g":"9-12","v":[1703,1705,1698,1588,1481,1462,1528,1579,1615,1647]},{"n":"Roosevelt Campus","g":"9-12","v":[881,859,994,1195,1292,1376,1488,1457,1452,1419]},{"n":"ACCESS Program","g":"1-8","v":[352,336,297,300,318,314,317,329,323,324]},{"n":"Alliance High School","g":"9-12","v":[199,191,198,214,213,169,195,193,201,217]},{"n":"Head Start Early Childhood Education","g":"PK","v":[724,694,685,683,322,379,468,494,711,857]},{"n":"Metropolitan Learning Center","g":"KG-12","v":[427,390,404,390,377,341,348,336,319,275]}];
+const level=g=>{if(/^(KG|PK)-5$|^PK$/.test(g))return"el";if(g==="6-8")return"mid";if(g==="9-12"||g==="8-12")return"hs";return"k8"};
+D.forEach(s=>s.l=level(s.g));
+const sel=new Map(); let mode="abs",showTot=false,lv="all",chart;
+const PAL=["#2f6fb0","#e07a1f","#2e9d5b","#c23b5a","#7a52b3","#16a3b8","#b8a000","#8c5a3c","#d94fa0","#5f6b7a"];
+const used=()=>new Set([...sel.values()]);
+const nextColor=()=>{const u=used();for(const c of PAL)if(!u.has(c))return c;return`hsl(${(sel.size*47)%360},60%,50%)`};
+const $=id=>document.getElementById(id);
+const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function series(vals){
+  if(mode==="abs")return vals;
+  if(mode==="idx"){const b=vals.find(v=>v!=null);return vals.map(v=>v==null?null:+(v/b*100).toFixed(1))}
+  return vals.map((v,i)=>i===0||v==null||vals[i-1]==null?null:+((v-vals[i-1])/vals[i-1]*100).toFixed(1));
+}
+function draw(){
+  const ds=[];
+  sel.forEach((col,n)=>{const s=D.find(x=>x.n===n);ds.push({label:n,data:series(s.v),borderColor:col,backgroundColor:col,borderWidth:2.5,pointRadius:3,tension:.2,spanGaps:false})});
+  if(showTot&&sel.size){
+    const tv=YEARS.map((_,i)=>{let t=0,ok=false;sel.forEach((c,n)=>{const v=D.find(x=>x.n===n).v[i];if(v!=null){t+=v;ok=true}});return ok?t:null});
+    ds.push({label:"Combined total",data:series(tv),borderColor:cssv("--fg"),backgroundColor:cssv("--fg"),borderDash:[6,4],borderWidth:2,pointRadius:2,spanGaps:false});
+  }
+  const mut=cssv("--mut"),bd=cssv("--bd");
+  const cfg={type:"line",data:{labels:YEARS,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{display:false},tooltip:{itemSort:(a,b)=>(b.raw??-1e9)-(a.raw??-1e9),callbacks:{label:c=>{const v=c.raw;return` ${c.dataset.label}: ${v==null?"n/a":mode==="abs"?v.toLocaleString():v+"%"}`}}}},
+    scales:{x:{ticks:{color:mut,maxRotation:45},grid:{color:bd}},y:{ticks:{color:mut,callback:v=>mode==="abs"?v:v+"%"},grid:{color:bd},beginAtZero:mode==="abs",title:{display:true,color:mut,text:mode==="abs"?"Students":mode==="idx"?"Share of first-year enrollment":"Year-over-year change"}}}}};
+  if(chart)chart.destroy();
+  if(!ds.length){const c=$("c").getContext("2d");c.clearRect(0,0,9999,9999);c.fillStyle=mut;c.font="14px system-ui";c.fillText("Select schools below to chart them",16,40);chart=null;return}
+  chart=new Chart($("c"),cfg);
+}
+function chips(){
+  const el=$("chips");el.innerHTML="";
+  if(!sel.size){el.innerHTML='<span class="empty">None yet. Tap schools below.</span>';return}
+  sel.forEach((col,n)=>{const d=document.createElement("span");d.className="chip";d.innerHTML=`<i style="background:${col}"></i>${n}<b title="Remove">×</b>`;d.querySelector("b").onclick=()=>{sel.delete(n);refresh()};el.appendChild(d)});
+}
+const visible=()=>{const q=$("q").value.trim().toLowerCase();return D.filter(s=>(lv==="all"||s.l===lv)&&s.n.toLowerCase().includes(q))};
+function list(){
+  const el=$("list");el.innerHTML="";const v=visible();
+  if(!v.length){el.innerHTML='<div class="item empty">No matches</div>';return}
+  v.forEach(s=>{const last=[...s.v].reverse().find(x=>x!=null);const r=document.createElement("label");r.className="item";
+    r.innerHTML=`<input type="checkbox" ${sel.has(s.n)?"checked":""}><span>${s.n}</span><small>${s.g} · ${last??"–"}</small>`;
+    r.querySelector("input").onchange=e=>{e.target.checked?sel.set(s.n,nextColor()):sel.delete(s.n);chips();draw()};
+    el.appendChild(r)});
+}
+function refresh(){chips();list();draw()}
+$("q").oninput=list;
+$("mode").onclick=e=>{const m=e.target.dataset.m;if(!m)return;mode=m;[...$("mode").children].forEach(b=>b.classList.toggle("on",b.dataset.m===m));draw()};
+$("lv").onclick=e=>{const l=e.target.dataset.l;if(!l)return;lv=l;[...$("lv").children].forEach(b=>b.classList.toggle("on",b.dataset.l===l));list()};
+$("tot").onclick=()=>{showTot=!showTot;$("tot").classList.toggle("on",showTot);draw()};
+$("clear").onclick=()=>{sel.clear();refresh()};
+$("addvis").onclick=()=>{visible().slice(0,40).forEach(s=>{if(!sel.has(s.n))sel.set(s.n,nextColor())});refresh()};
+["Maplewood","Rieke","Hayhurst","Markham"].forEach(n=>{if(D.some(s=>s.n===n))sel.set(n,nextColor())});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",draw);
+refresh();
+</script></body></html>
