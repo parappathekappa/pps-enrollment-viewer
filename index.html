@@ -55,7 +55,7 @@ details summary{cursor:pointer;color:var(--ac);font-size:14px;padding:4px 0}
 <body><main>
 <h1>Portland Public Schools enrollment</h1>
 <div class="sub">2016-17 to 2025-26 · pick any number of schools to compare · <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">source data</a></div>
-<div class="tabs" id="tabs"><button class="on" data-v="school">By school</button><button data-v="grade">By grade</button></div>
+<div class="tabs" id="tabs"><button class="on" data-v="school">By school</button><button data-v="grade">By grade</button><button data-v="pop">Population vs. enrollment</button></div>
 <div id="vSchool">
 
 <div class="card">
@@ -113,6 +113,34 @@ details summary{cursor:pointer;color:var(--ac);font-size:14px;padding:4px 0}
 <li><a href="https://www.pps.net/cms/lib/OR01913224/Centricity/Domain/207/Enrollment%20Summary%20October%202024.pdf" target="_blank" rel="noopener">PPS October 2024 Enrollment Summary (contains 2022, 2023, 2024)</a><span class="yrs">Used for 2023-24 to 2024-25</span></li>
 <li><a href="https://resources.finalsite.net/images/v1767112711/ppsnet/g7i6hep7yr88f3z62ts6/EnrollmentbyGradeandProgram25-26_1.pdf" target="_blank" rel="noopener">PPS October 2025 Enrollment by Grade and Program</a><span class="yrs">Used for 2025-26</span></li>
 </ul></details>
+</div>
+</div>
+<div id="vPop" hidden>
+<div class="card">
+  <div class="seg" id="pmode" style="margin-bottom:10px"><button data-m="single" class="on">Population &amp; enrollment</button><button data-m="idx">2016 comparison</button><button data-m="ratio">% PPS Enrollment</button></div>
+  <div class="chartbox" style="height:380px"><canvas id="pc"></canvas></div>
+  <p class="note" id="pnote" style="margin:8px 0 0"></p>
+</div>
+<div class="card">
+  <p class="lab">Age groups</p>
+  <div class="pills" id="ppills"></div>
+</div>
+<div class="card">
+  <p class="lab">Change, 2016 to 2024</p>
+  <div class="tw"><table id="ptab"></table></div>
+</div>
+<div class="card">
+  <p class="lab">How these are matched</p>
+  <p class="note">Population comes from Census ACS estimates for Portland School District 1J (calendar year). Enrollment is PPS October counts, so the 2016-17 school year is plotted at 2016. Elementary, middle and high population groups are estimated by splitting the Census 10-14 band evenly, so they are approximate. Pre-K enrollment covers only ages 3-4 against a 0-4 population, so treat that pair as a rough comparison. ◆ marks 2020, which is an ACS 5-year estimate. PPS enrollment also differs from population because of private school, home school, charters and transfers.</p>
+  <details><summary>View Census sources</summary><ul class="src" id="psrc"></ul></details>
+</div>
+<div class="card">
+  <p class="lab">Further reading</p>
+  <p class="note">For further reading on public school population decline:</p>
+  <ul class="src">
+    <li><a href="https://www.brookings.edu/articles/declining-public-school-enrollment/" target="_blank" rel="noopener">Declining public school enrollment</a><span class="yrs">Brookings Institution · Council, Goulas and Monachou · August 2025</span></li>
+    <li><a href="https://pdxscholar.library.pdx.edu/cgi/viewcontent.cgi?article=1152&amp;context=enrollmentforecasts" target="_blank" rel="noopener">Portland Public Schools Enrollment Forecast 2024-25 to 2033-34</a><span class="yrs">Portland State University Population Research Center · June 2024</span></li>
+  </ul>
 </div>
 </div>
 <div class="sub" style="margin-top:4px">Source: <a href="https://www.pps.net/fs/resource-manager/view/aefd9869-b3da-4cf6-b9c6-1bec5149eb03" target="_blank" rel="noopener" style="color:var(--ac)">Portland Public Schools enrollment document (pps.net)</a></div>
@@ -220,8 +248,8 @@ $("gmode").onclick=e=>{const m=e.target.dataset.m;if(!m)return;gmode=m;[...$("gm
 $("gquick").onclick=e=>{const s=e.target.dataset.s;if(!s)return;gsel.clear();GROUPS[s].forEach(g=>gsel.set(g,gcol()));grefresh()};
 let gInit=false;
 $("tabs").onclick=e=>{const v=e.target.dataset.v;if(!v)return;[...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.v===v));
-  $("vSchool").hidden=v!=="school";$("vGrade").hidden=v!=="grade";
-  if(v==="grade"){if(!gInit){gInit=true;GROUPS.el.forEach(g=>gsel.set(g,gcol()))}grefresh();requestAnimationFrame(gdraw)}else{draw();requestAnimationFrame(draw)}};
+  $("vSchool").hidden=v!=="school";$("vGrade").hidden=v!=="grade";$("vPop").hidden=v!=="pop";
+  if(v==="grade"){if(!gInit){gInit=true;GROUPS.el.forEach(g=>gsel.set(g,gcol()))}grefresh();requestAnimationFrame(gdraw)}else if(v==="pop"){pinit();requestAnimationFrame(pdraw)}else{draw();requestAnimationFrame(draw)}};
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(!$("vGrade").hidden)gdraw()});
 </script>
 <script>
@@ -236,5 +264,56 @@ function makeDismissable(id,get){
 }
 window.addEventListener("load",()=>{draw();if(!$("vGrade").hidden)gdraw()});
 makeDismissable("c",()=>chart);makeDismissable("gc",()=>gchart);
+</script>
+<script>
+const PD=[[2015,"ACS 1-year",27750,30074,11995,16261,58330,"https://data.census.gov/table/ACSDT1Y2015.B01001?g=970XX00US4110040"],[2016,"ACS 1-year",29138,29724,13501,17732,60957,"https://data.census.gov/table/ACSDT1Y2016.B01001?g=970XX00US4110040"],[2017,"ACS 1-year",27032,28743,14421,17064,60228,"https://data.census.gov/table/ACSDT1Y2017.B01001?g=970XX00US4110040"],[2018,"ACS 1-year",27013,30056,14671,17837,62565,"https://data.census.gov/table/ACSDT1Y2018.B01001?g=970XX00US4110040"],[2019,"ACS 1-year",24156,31441,14966,18540,64946,"https://data.census.gov/table/ACSDT1Y2019.B01001?g=970XX00US4110040"],[2020,"ACS 5-year",23994,29127,14036,17452,60615,"https://data.census.gov/table/ACSDT5Y2020.B01001?g=970XX00US4110040"],[2021,"ACS 1-year",20255,27237,13195,17278,57710,"https://data.census.gov/table/ACSDT1Y2021.B01001?g=970XX00US4110040"],[2022,"ACS 1-year",22463,26888,13169,18819,58875,"https://data.census.gov/table/ACSDT1Y2022.B01001?g=970XX00US4110040"],[2023,"ACS 1-year",19719,25226,14041,22046,61314,"https://data.census.gov/table/ACSDT1Y2023.B01001?g=970XX00US4110040"],[2024,"ACS 1-year",18742,24793,15247,18573,58613,"https://data.census.gov/table/ACSDT1Y2024.B01001?g=970XX00US4110040"]];
+const PG=[
+ {k:"el",name:"Elementary",pi:3,col:"#2f6fb0",en:["Kindergarten","Grade 1","Grade 2","Grade 3","Grade 4","Grade 5"],pl:"ages 5-10",el:"K-5"},
+ {k:"mid",name:"Middle",pi:4,col:"#2e9d5b",en:["Grade 6","Grade 7","Grade 8"],pl:"ages 11-13",el:"6-8"},
+ {k:"hi",name:"High",pi:5,col:"#e07a1f",en:["Grade 9","Grade 10","Grade 11","Grade 12"],pl:"ages 14-17",el:"9-12"},
+ {k:"tot",name:"All school-age",pi:6,col:"#5f6b7a",en:["K - 12 Totals"],pl:"ages 5-17",el:"K-12"},
+ {k:"pre",name:"Pre-K",pi:2,col:"#7a52b3",en:["Pre-Kindergarten"],pl:"ages 0-4",el:"Pre-K"}];
+const PX=[2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+PG.forEach(g=>{g.pop=PX.map(y=>{const r=PD.find(d=>d[0]===y);return r?r[g.pi]:null});
+  g.enr=PX.map(y=>{const i=y-2016;return i<0||i>9?null:g.en.reduce((s,n)=>s+GD.find(x=>x.g===n).v[i],0)})});
+const psel=new Set(["el"]);let pmode="single",pchart,pInit=false;
+const idx=a=>{const b=a[1];return a.map(v=>v==null?null:+(v/b*100).toFixed(1))};
+function pdraw(){
+  const mut=cssv("--mut"),bd=cssv("--bd"),ds=[];
+  PG.filter(g=>psel.has(g.k)).forEach(g=>{
+    const pop=pmode==="idx"?idx(g.pop):g.pop,enr=pmode==="idx"?idx(g.enr):g.enr;
+    if(pmode==="ratio"){ds.push({label:g.name+": % PPS enrollment",data:g.pop.map((p,i)=>p&&g.enr[i]?+(g.enr[i]/p*100).toFixed(1):null),borderColor:g.col,backgroundColor:g.col,borderWidth:2.5,pointRadius:3,tension:.2,yAxisID:"y"});return}
+    ds.push({label:g.name+" population ("+g.pl+")",data:pop,borderColor:g.col,backgroundColor:g.col,borderWidth:2.5,pointRadius:PX.map(y=>y===2020?6:3),pointStyle:PX.map(y=>y===2020?"rectRot":"circle"),tension:.2,yAxisID:"y"});
+    ds.push({label:g.name+" PPS enrollment ("+g.el+")",data:enr,borderColor:g.col,backgroundColor:g.col,borderWidth:2.5,borderDash:[6,4],pointRadius:3,pointStyle:"rect",tension:.2,yAxisID:"y"});
+  });
+  const fmt=v=>pmode==="single"?v.toLocaleString():v+"%";
+  const yt=pmode==="single"?"People / students":pmode==="idx"?"Index (2016 = 100)":"% PPS Enrollment";
+  if(pchart)pchart.destroy();
+  $("pnote").textContent=pmode==="single"?"Population (solid) and PPS enrollment (dashed) on one axis, so the gap between them is visible.":pmode==="idx"?"Both series are set to 100 in 2016, so slopes are directly comparable.":"Share of the age group's population that appears in PPS October enrollment. A rough ratio: it ignores private school, home school, charters and transfers.";
+  if(!ds.length){const c=$("pc").getContext("2d");c.clearRect(0,0,9999,9999);c.fillStyle=mut;c.font="14px system-ui";c.fillText("Select an age group below",16,40);pchart=null;ptable();return}
+  const sc={x:{ticks:{color:mut},grid:{color:bd}},y:{position:"left",beginAtZero:pmode!=="idx",ticks:{color:mut,callback:fmt},grid:{color:bd},title:{display:true,text:yt,color:mut}}};
+  pchart=new Chart($("pc"),{type:"line",data:{labels:PX,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{display:true,labels:{color:mut,usePointStyle:true,boxWidth:8,font:{size:11}}},tooltip:{callbacks:{label:c=>{const v=c.raw;if(v==null)return` ${c.dataset.label}: n/a`;return` ${c.dataset.label}: ${pmode==="single"?v.toLocaleString():v+"%"}${c.label==="2020"&&/population/.test(c.dataset.label)?" (5-yr est.)":""}`}}}},scales:sc}});
+  ptable();
+}
+function ptable(){
+  const t=$("ptab"),gs=PG.filter(g=>psel.has(g.k));
+  if(!gs.length){t.innerHTML='<tr><td class="empty">No age groups selected</td></tr>';return}
+  const pc=(a,b)=>{const d=(a-b)/b*100;return`<span class="${d<0?"neg":"pos"}">${d>0?"+":""}${d.toFixed(1)}%</span>`};
+  let r="<tr><th>Age group</th><th>Population</th><th>PPS enrollment</th></tr>";
+  gs.forEach(g=>{r+=`<tr><td><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${g.col};margin-right:6px"></i>${g.name}</td><td>${pc(g.pop[9],g.pop[1])}</td><td>${pc(g.enr[9],g.enr[1])}</td></tr>`});
+  t.innerHTML=r;
+}
+function ppills(){
+  const el=$("ppills");el.innerHTML="";
+  PG.forEach(g=>{const b=document.createElement("button"),on=psel.has(g.k);b.className="pill"+(on?" on":"");
+    b.innerHTML=`<i style="background:${g.col}"></i>${g.name} <small style="color:var(--mut)">${g.pl}</small>`;
+    b.onclick=()=>{on?psel.delete(g.k):psel.add(g.k);ppills();pdraw()};el.appendChild(b)});
+}
+function pinit(){if(pInit)return;pInit=true;ppills();
+  $("psrc").innerHTML=PD.map(d=>`<li><a href="${d[7]}" target="_blank" rel="noopener">${d[0]} ACS ${d[1].replace("ACS ","")} (table B01001)</a></li>`).join("")}
+$("pmode").onclick=e=>{const m=e.target.dataset.m;if(!m)return;pmode=m;[...$("pmode").children].forEach(b=>b.classList.toggle("on",b.dataset.m===m));pdraw()};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(!$("vPop").hidden)pdraw()});
+makeDismissable("pc",()=>pchart);
 </script>
 </body></html>
